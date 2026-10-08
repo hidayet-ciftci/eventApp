@@ -29,7 +29,7 @@ Organizatörlerin kontenjanlı etkinlik oluşturduğu, kullanıcıların yer ay�
 ## Stack
 **Backend**
 - ASP.NET Core 10 Web API, EF Core 10, PostgreSQL (Npgsql)
-- Clean Architecture: `Domain`, `Application`, `Infrastructure`, `Api`
+- Mimari: **N-Tier ile başla, Clean Architecture'a refactor et** (bkz. "Mimari kararı")
 - JWT + refresh token
 - FluentValidation, Serilog, Hangfire (PostgreSQL storage)
 - OpenAPI + Scalar (Swagger yerine)
@@ -58,9 +58,34 @@ Organizatörlerin kontenjanlı etkinlik oluşturduğu, kullanıcıların yer ay�
 - Görseller: Cloudinary
 - E-posta: Brevo veya Resend
 
+## Repo yapısı
+Tek repo (monorepo), frontend ve backend ayrı klasörlerde:
+```
+EventApp/
+├── backend/            EventApp.slnx, global.json, .gitignore (Visual Studio 2026 ile geliştiriliyor)
+│   ├── src/            EventApp.WebAPI, EventApp.Business, EventApp.DataAccess, EventApp.Entities
+│   └── tests/          EventApp.UnitTests, EventApp.IntegrationTests
+├── frontend/           Next.js (kuruldu)
+├── .github/workflows/  (7. adımda)
+├── docker-compose.yml  (7. adımda)
+├── CLAUDE.md
+└── README.md
+```
+
+## Mimari kararı
+Hidayet N-Tier'ı biliyor, Clean Architecture'ı öğrenmek istiyor. Bu yüzden:
+1. **Önce N-Tier:** `WebAPI → Business → DataAccess → Entities`. Repository arayüzleri DataAccess'te durur.
+2. **Auth bitince Clean Architecture'a refactor (2. adımın sonunda, testlerden önce):**
+   - Entities → Domain, Business → Application, DataAccess → Infrastructure, WebAPI → Api
+   - Arayüzler (`IEventRepository`, `IEmailSender`, `ITokenService`...) Application'a taşınır.
+   - Business → DataAccess referansı silinir, Infrastructure → Application referansı eklenir (Dependency Inversion).
+   - Application klasörleri türe göre değil özelliğe göre: `Auth/`, `Events/`, `Reservations/`.
+   - Repository pattern mi, `IAppDbContext` mi? Bu karar refactor sırasında netleşecek.
+3. Refactor'u erteleme: 4-5. adımlarda dış servisler (e-posta, Hangfire, Cloudinary) çoğalınca taşıma maliyeti artar.
+
 ## Yol haritası
 1. Domain modelleme + veritabanı şeması, solution ve klasör yapısı  ← SIRADAKİ ADIM
-2. Auth (register, login, JWT, refresh token, roller) + testler
+2. Auth (register, login, JWT, refresh token, roller) → **Clean Architecture refactor** → testler
 3. Etkinlik CRUD, filtreleme, sayfalama, görsel yükleme + testler
 4. Rezervasyon akışı + eşzamanlılık + testler
 5. Hangfire ile hatırlatma e-postaları
@@ -71,4 +96,7 @@ Organizatörlerin kontenjanlı etkinlik oluşturduğu, kullanıcıların yer ay�
 
 ## İlerleme
 - [x] Planlama ve stack seçimi (claude.ai)
-- [ ] Hidayet proje iskeletini kuruyor
+- [x] Repo yapısı kararı: `backend/` + `frontend/` ayrı klasörler
+- [x] Frontend (Next.js) iskeleti kuruldu
+- [ ] Backend iskeleti (N-Tier, Visual Studio 2026) ← Hidayet kuruyor
+- [ ] Domain modelleme taslağı (entity'ler, alanlar, rezervasyon durumları, kontenjan takibi)
